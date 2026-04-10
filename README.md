@@ -1,6 +1,6 @@
 # The Agentic Developer
 
-A production-grade Claude Code configuration with 12 specialized agents, 12 custom skills, 6 loop commands, and a self-improving weekly audit system. This is how I build software with AI — not as a novelty, but as core infrastructure.
+A production-grade Claude Code configuration with 12 specialized agents, 14 custom skills, 6 loop commands, an advisor-reminder hook, and a self-improving weekly audit system. This is how I build software with AI — not as a novelty, but as core infrastructure.
 
 Built for shipping across Django, Flask, Next.js, React/Vite, Python utilities, and Node.js integrations. Every agent is grounded in real project patterns, real incident history, and real conventions. The setup compounds knowledge over time through persistent expertise files and automated weekly audits.
 
@@ -20,22 +20,24 @@ Tiered by model for cost efficiency:
 
 **Key design principle:** Agents contain only project-specific patterns — not generic best practices Claude already knows. A 120-line agent with real patterns outperforms a 300-line agent padded with textbook content.
 
-### 12 Custom Skills (`skills/`)
+### 14 Custom Skills (`skills/`)
 
-| Skill             | Purpose                                                           |
-| ----------------- | ----------------------------------------------------------------- |
-| `qa-gate`         | Universal QA — dispatches review agents based on output type      |
-| `decision-brief`  | Multi-agent deliberation with structured debate and voting        |
-| `status`          | Daily standups or cross-project snapshots from git/calendar/email |
-| `file-emails`     | Auto-file inbox emails into Outlook folders                       |
-| `inbox-summary`   | Quick triage of unread inbox                                      |
-| `refactor-ui`     | Safely restructure existing UI without breaking functionality     |
-| `ui-ux-review`    | Audit pages for design quality and accessibility                  |
-| `copy`            | Review text for clarity, tone, and impact                         |
-| `brief`           | Translate technical work into executive summaries                 |
-| `update-all`      | Staged package updates with dry-run preview                       |
-| `ai-digest-agent` | Weekly AI/automation digest curation                              |
-| `3d-logo`         | Interactive 3D logos with Three.js                                |
+| Skill                 | Purpose                                                                |
+| --------------------- | ---------------------------------------------------------------------- |
+| `qa-gate`             | Universal QA — dispatches review agents based on output type           |
+| `decision-brief`      | Multi-agent deliberation with structured debate and voting             |
+| `delegate`            | Fire-and-forget multi-agent execution with phased dispatch and retries |
+| `status`              | Daily standups or cross-project snapshots from git/calendar/email      |
+| `file-emails`         | Auto-file inbox emails into Outlook folders                            |
+| `inbox-summary`       | Quick triage of unread inbox                                           |
+| `refactor-ui`         | Safely restructure existing UI without breaking functionality          |
+| `ui-ux-review`        | Audit pages for design quality and accessibility                       |
+| `copy`                | Review text for clarity, tone, and impact                              |
+| `brief`               | Translate technical work into executive summaries                      |
+| `update-all`          | Staged package updates with dry-run preview                            |
+| `ai-digest-agent`     | Weekly AI/automation digest curation                                   |
+| `ai-platform-updates` | Log Claude/ChatGPT/Gemini releases into a color-coded spreadsheet      |
+| `3d-logo`             | Interactive 3D logos with Three.js                                     |
 
 ### 6 Loop Commands (`commands/`)
 
@@ -49,6 +51,15 @@ Recurring automations that run during active sessions:
 | `merge-conflict-watch` | 5 min        | Detect file collisions across worktrees                     |
 | `weekly-review`        | Manual       | Weekly status + auto-chains to agent improvement on Fridays |
 | `agent-improvement`    | Weekly (Fri) | Audit all agents/skills for drift and staleness             |
+
+### Advisor Reminder Hook
+
+A `UserPromptSubmit` hook in `~/.claude/settings.json` injects a short reminder at the start of every prompt, nudging Claude to call its `advisor()` second-opinion tool at two checkpoints on non-trivial tasks:
+
+1. **After orientation, before substantive work** — catch bad plans before writing code
+2. **Before declaring done** — sanity check the result with the full transcript as context
+
+The reminder explicitly tells Claude to skip the check for simple lookups and short reactive follow-ups, so it doesn't become noise. The hook is a one-line `echo` that emits `hookSpecificOutput.additionalContext` — no external script required. See `docs/advisor-hook.md` for the exact settings.json snippet.
 
 ### Self-Improvement System
 
@@ -151,12 +162,14 @@ claude-code-setup/
 │   ├── tdd-engineer.md              # Test-driven development (sonnet)
 │   └── ui-ux-designer.md            # Design system + layout (opus)
 │
-├── skills/                          # 12 custom skills
+├── skills/                          # 14 custom skills
 │   ├── 3d-logo/SKILL.md
 │   ├── ai-digest-agent/SKILL.md
+│   ├── ai-platform-updates/SKILL.md
 │   ├── brief/SKILL.md
 │   ├── copy/SKILL.md
 │   ├── decision-brief/SKILL.md
+│   ├── delegate/SKILL.md
 │   ├── file-emails/SKILL.md
 │   ├── inbox-summary/SKILL.md
 │   ├── qa-gate/SKILL.md
@@ -179,16 +192,18 @@ claude-code-setup/
 │   └── skill-template.md            # New skill starter
 │
 └── docs/
-    └── design-philosophy.md         # Deep dive on design decisions
+    ├── design-philosophy.md         # Deep dive on design decisions
+    └── advisor-hook.md              # UserPromptSubmit advisor reminder config
 ```
 
 ## Stats
 
 | Metric                 | Value                               |
 | ---------------------- | ----------------------------------- |
-| Agents                 | 12 (8 Opus, 4 Sonnet, 1 Haiku)      |
-| Skills                 | 12                                  |
+| Agents                 | 12 (7 Opus, 4 Sonnet, 1 Haiku)      |
+| Skills                 | 14                                  |
 | Commands               | 6                                   |
+| Hooks                  | 1 (advisor reminder)                |
 | Avg agent size         | 150 lines (pure signal, no filler)  |
 | Description compliance | 100% under 250 chars                |
 | Self-improvement       | Weekly audit + monthly cross-review |
