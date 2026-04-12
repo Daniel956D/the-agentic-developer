@@ -2,7 +2,7 @@ First, run `date +%u` to get the day of week (1=Mon, 7=Sun). If it's 6 or 7 (Sat
 
 Generate a weekly status summary covering the last 7 days. Gather from these sources:
 
-1. **Git activity**: For each project in ~/projects/, ~/Projects/, and ~/Documents/GitHub/ that has a .git directory, run `git log --oneline --after="7 days ago" --all` to get the week's commits. Skip repos with no activity.
+1. **Git activity**: Read project paths from `~/.claude/projects.txt` (one path per line, ignore lines starting with `#`). For each path, run `git -C <path> log --oneline --after="7 days ago" --all` to get the week's commits. Skip repos with no activity. If `projects.txt` is missing, regenerate it via `bash ~/.claude/scripts/rebuild-projects-txt.sh` and then proceed.
 
 2. **Agent dispatches**: Check if any agent-expertise files in ~/.claude/agent-expertise/ were modified in the last 7 days. If so, list which agents were used and what they learned. Otherwise omit this section.
 

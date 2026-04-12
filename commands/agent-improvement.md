@@ -7,13 +7,15 @@ Run the full agent & skill improvement cycle. This audits all agents and skills 
 Scan active projects to build current-state picture:
 
 ```bash
-for dir in ~/projects/*/; do
+# Read canonical project list (regenerate if missing)
+[ -f ~/.claude/projects.txt ] || bash ~/.claude/scripts/rebuild-projects-txt.sh
+grep -v '^#\|^$' ~/.claude/projects.txt | while read -r dir; do
   [ -d "$dir/.git" ] || continue
   name=$(basename "$dir")
   last_commit=$(git -C "$dir" log --oneline -1 --format="%ar" 2>/dev/null || echo "unknown")
   stack=""
   [ -f "$dir/manage.py" ] && stack="$stack django"
-  [ -f "$dir/next.config.ts" ] || [ -f "$dir/next.config.js" ] && stack="$stack nextjs"
+  { [ -f "$dir/next.config.ts" ] || [ -f "$dir/next.config.js" ]; } && stack="$stack nextjs"
   [ -f "$dir/sanity.config.ts" ] && stack="$stack sanity"
   [ -f "$dir/vite.config.ts" ] && stack="$stack vite"
   [ -f "$dir/requirements.txt" ] && stack="$stack python"

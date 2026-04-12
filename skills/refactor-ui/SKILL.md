@@ -35,6 +35,10 @@ Before proposing changes, explicitly list:
 - **State**: variables that track UI state (expanded rows, active tabs, filters)
 - **Side effects**: polling, localStorage reads/writes, event listeners on document/window
 
+### 2.5. When to Consult `ui-ux-designer`
+
+This skill handles **structural** refactors safely (preserving handlers, API calls, state). For **visual design decisions** that come up mid-refactor — spacing scale, hierarchy choices, color tokens, typography, responsive breakpoints, animation timing — dispatch the `ui-ux-designer` agent before committing the change. Skip the dispatch for purely mechanical refactors (e.g., cards → table with no visual rethink).
+
 ### 3. Check Project Patterns
 
 Read CLAUDE.md for project-specific patterns. Common ones to enforce:
