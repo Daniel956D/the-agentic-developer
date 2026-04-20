@@ -1,15 +1,15 @@
 # Evaluation Harness
 
-Most Claude Code agent repos ship with zero evidence that the agents actually work. You add a `code-reviewer` agent because the README says you should, and you assume it's doing something. This repo ships with two eval instruments that measure whether each agent is actually catching what it's supposed to catch.
+Most Claude Code agent repos ship with zero evidence that the agents actually work. You add a `code-reviewer` agent because the README says you should, and you assume it's doing something. This doc describes a two-instrument eval design. **Only the agent catch-rate harness is shipped in this repo** — the skill-dispatch harness is its sibling, still run locally, and will be published in a follow-up PR once its scenario set is large enough to be useful as a reference.
 
 ## Two instruments, two questions
 
-| Instrument                | Layer      | Question                                                           | Status                                                 |
-| ------------------------- | ---------- | ------------------------------------------------------------------ | ------------------------------------------------------ |
-| **Skill-dispatch eval**   | Routing    | When I ask something, does Claude Code pick the right skill/agent? | ~87% strict accuracy on a 2-skill starter scenario set |
-| **Agent catch-rate eval** | Capability | When the agent _does_ run, does it catch the bug it's supposed to? | Baselines below                                        |
+| Instrument                | Layer      | Question                                                           | Shipped here?                                           |
+| ------------------------- | ---------- | ------------------------------------------------------------------ | ------------------------------------------------------- |
+| **Skill-dispatch eval**   | Routing    | When I ask something, does Claude Code pick the right skill/agent? | **Not yet** — run privately; ~87% strict on starter set |
+| **Agent catch-rate eval** | Capability | When the agent _does_ run, does it catch the bug it's supposed to? | **Yes** — see `scripts/eval/agent-eval.py` + fixtures   |
 
-Routing accuracy × catch rate = end-to-end system quality. You need both.
+Routing accuracy × catch rate = end-to-end system quality. You need both. The rest of this doc covers the one you can run today.
 
 ## Baselines (reference, adapt for your own setup)
 
