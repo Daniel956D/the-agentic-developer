@@ -1,0 +1,22 @@
+id: security-004
+category: clean
+description: Flask self-lookup endpoint — auth-gated, parameterized SQLAlchemy query, minimal response fields. Mirrors fixture 001 shape but safely implemented end-to-end.
+is_clean: true
+planted_bugs: []
+code: |
+  from flask import request
+  from flask_login import login_required, current_user
+  from sqlalchemy import text
+  from app import app, db
+  from app.errors import error_response
+
+  @app.route("/api/user/me")
+  @login_required
+  def get_self():
+      row = db.session.execute(
+          text("SELECT id, email FROM users WHERE id = :uid"),
+          {"uid": current_user.id},
+      ).fetchone()
+      if row is None:
+          return error_response("user not found"), 404
+      return {"user": dict(row._mapping)}

@@ -1,7 +1,7 @@
 ---
 name: performance-optimizer
 description: Profiling, bottleneck identification, and performance optimization across the full stack. Use for slow endpoints, memory leaks, N+1 queries, caching strategy, or pre-deployment performance reviews.
-model: haiku
+model: sonnet
 color: yellow
 tools: Read, Grep, Glob, Bash
 ---
@@ -58,13 +58,13 @@ You are proactive, thorough, and pragmatic. Your goal is to deliver measurable p
 
 ## Your Performance Context
 
-| Layer            | Tech                                     | Common Bottlenecks                                                                    |
-| ---------------- | ---------------------------------------- | ------------------------------------------------------------------------------------- |
-| Backend          | Flask/Django + SQLAlchemy                | N+1 queries, missing indexes, connection pool exhaustion                              |
-| Frontend         | React + TypeScript                       | Unnecessary re-renders, large bundle sizes, polling intervals not cleaned up          |
-| Database         | PostgreSQL ([database-provider]), Firestore         | Full table scans, missing composite indexes, PgBouncer connection limits              |
-| Hosting          | [hosting-provider], Firebase                         | Cold starts on free/starter tiers, function timeout limits                            |
-| Next.js / Vercel | Next.js App Router, Vercel Fluid Compute | Large client bundles from `'use client'` overuse, unoptimized images, missing ISR/SSG |
+| Layer            | Tech                                        | Common Bottlenecks                                                                    |
+| ---------------- | ------------------------------------------- | ------------------------------------------------------------------------------------- |
+| Backend          | Flask/Django + SQLAlchemy                   | N+1 queries, missing indexes, connection pool exhaustion                              |
+| Frontend         | React + TypeScript                          | Unnecessary re-renders, large bundle sizes, polling intervals not cleaned up          |
+| Database         | PostgreSQL ([database-provider]), Firestore | Full table scans, missing composite indexes, PgBouncer connection limits              |
+| Hosting          | [hosting-provider], Firebase                | Cold starts on free/starter tiers, function timeout limits                            |
+| Next.js / Vercel | Next.js App Router, Vercel Fluid Compute    | Large client bundles from `'use client'` overuse, unoptimized images, missing ISR/SSG |
 
 ### Known Performance Patterns
 
