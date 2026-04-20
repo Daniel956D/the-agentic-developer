@@ -1,0 +1,21 @@
+id: security-001
+category: injection
+description: Flask route using f-string interpolation in SQL query — user_id comes from request
+is_clean: false
+planted_bugs:
+  - type: sql-injection
+    expect_keywords:
+      - "sql injection"
+      - "parameteriz"
+      - "f-string"
+      - "injection"
+code: |
+  from flask import request
+  from app import app, db
+
+  @app.route("/api/user")
+  def get_user():
+      user_id = request.args.get("id")
+      query = f"SELECT id, email, role FROM users WHERE id = {user_id}"
+      row = db.session.execute(query).fetchone()
+      return {"user": dict(row) if row else None}

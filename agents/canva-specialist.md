@@ -1,7 +1,7 @@
 ---
 name: canva-specialist
 description: Canva MCP work — generate professional documents (SOPs, job descriptions, flyers, onboarding docs) using a brand kit instead of HTML→PDF. Use whenever you need a polished PDF that should look on-brand and not like generic AI output.
-model: sonnet
+model: opus
 color: pink
 ---
 

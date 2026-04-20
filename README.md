@@ -1,6 +1,6 @@
 # The Agentic Developer
 
-A production-grade Claude Code configuration with 14 specialized agents, 15 custom skills, 6 loop commands, multiple safety hooks, and a self-improving weekly audit system. This is how I build software with AI — not as a novelty, but as core infrastructure.
+A production-grade Claude Code configuration with 16 specialized agents (14 local + 2 plugin-inherited), 14 custom skills, 6 loop commands, multiple safety hooks, a two-instrument evaluation harness, and a self-improving weekly audit system. This is how I build software with AI — not as a novelty, but as core infrastructure.
 
 Built for shipping across Django, Flask, Next.js, React/Vite, Python utilities, and Node.js integrations. Every agent is grounded in real project patterns, real incident history, and real conventions. The setup compounds knowledge over time through persistent expertise files and automated weekly audits.
 
@@ -8,39 +8,46 @@ Built for shipping across Django, Flask, Next.js, React/Vite, Python utilities, 
 
 ## What's Inside
 
-### 14 Specialized Agents (`agents/`)
+### 16 Specialized Agents (`agents/`)
 
 Tiered by model for cost efficiency:
 
-| Tier       | Model          | Agents                                                                                                                                                                  | Purpose                          |
-| ---------- | -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------- |
-| **Opus**   | Deep reasoning | ai-integration-specialist, code-reviewer, database-architect, security-auditor, sharepoint-graph-specialist, strategic-planner, systematic-debugger, ui-ux-designer (8) | Architecture, security, strategy |
-| **Sonnet** | Implementation | api-architect, canva-specialist, frontend-specialist, python-django-specialist, tdd-engineer (5)                                                                        | Building and testing             |
-| **Haiku**  | Fast checks    | performance-optimizer (1)                                                                                                                                               | Checklist-driven analysis        |
+| Tier        | Model          | Agents                                                                                                                                                                                         | Purpose                                  |
+| ----------- | -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------- |
+| **Opus**    | Deep reasoning | ai-integration-specialist, canva-specialist, code-reviewer, database-architect, security-auditor, sharepoint-graph-specialist, strategic-planner, systematic-debugger, ui-ux-designer (9)      | Architecture, security, strategy         |
+| **Sonnet**  | Implementation | api-architect, frontend-specialist, performance-optimizer, python-django-specialist, tdd-engineer (5)                                                                                          | Building and testing                     |
+| **Inherit** | Plugin-sourced | silent-failure-hunter, type-design-analyzer (2) — from the [`pr-review-toolkit`](https://github.com/anthropics/claude-plugins) plugin, kept registered even when the plugin itself is disabled | Error-handling and type-invariant review |
 
 **Key design principle:** Agents contain only project-specific patterns — not generic best practices Claude already knows. A 120-line agent with real patterns outperforms a 300-line agent padded with textbook content.
 
-The two newest agents — `sharepoint-graph-specialist` and `canva-specialist` — are templated with `[bracketed-placeholders]` so you can drop in your tenant, brand kit, and project paths.
+The two newest local agents — `sharepoint-graph-specialist` and `canva-specialist` — are templated with `[bracketed-placeholders]` so you can drop in your tenant, brand kit, and project paths.
 
-### 15 Custom Skills (`skills/`)
+Tier rationale for recent changes:
 
-| Skill                 | Purpose                                                                |
-| --------------------- | ---------------------------------------------------------------------- |
-| `qa-gate`             | Universal QA — dispatches review agents based on output type           |
-| `decision-brief`      | Multi-agent deliberation with structured debate and voting             |
-| `delegate`            | Fire-and-forget multi-agent execution with phased dispatch and retries |
-| `grep-all`            | Cross-project regex search across every repo in `projects.txt`         |
-| `status`              | Daily standups or cross-project snapshots from git/calendar/email      |
-| `file-emails`         | Auto-file inbox emails into Outlook folders                            |
-| `inbox-summary`       | Quick triage of unread inbox                                           |
-| `refactor-ui`         | Safely restructure existing UI without breaking functionality          |
-| `ui-ux-review`        | Audit pages for design quality and accessibility                       |
-| `copy`                | Review text for clarity, tone, and impact                              |
-| `brief`               | Translate technical work into executive summaries                      |
-| `update-all`          | Staged package updates with dry-run preview                            |
-| `ai-digest-agent`     | Weekly AI/automation digest curation                                   |
-| `ai-platform-updates` | Log Claude/ChatGPT/Gemini releases into a color-coded spreadsheet      |
-| `3d-logo`             | Interactive 3D logos with Three.js                                     |
+- `canva-specialist` moved Sonnet→Opus because branded-document work benefits from deeper layout reasoning.
+- `performance-optimizer` moved Haiku→Sonnet after finding Haiku under-tiered for the rich output format (profile tables, ranked suggestions).
+- `silent-failure-hunter` and `type-design-analyzer` are plugin-inherited — we don't republish them here; see their source plugin.
+
+### 14 Custom Skills (`skills/`)
+
+| Skill             | Purpose                                                                |
+| ----------------- | ---------------------------------------------------------------------- |
+| `qa-gate`         | Universal QA — dispatches review agents based on output type           |
+| `decision-brief`  | Multi-agent deliberation with structured debate and voting             |
+| `delegate`        | Fire-and-forget multi-agent execution with phased dispatch and retries |
+| `grep-all`        | Cross-project regex search across every repo in `projects.txt`         |
+| `status`          | Daily standups or cross-project snapshots from git/calendar/email      |
+| `file-emails`     | Auto-file inbox emails into Outlook folders                            |
+| `inbox-summary`   | Quick triage of unread inbox                                           |
+| `refactor-ui`     | Safely restructure existing UI without breaking functionality          |
+| `ui-ux-review`    | Audit pages for design quality and accessibility                       |
+| `copy`            | Review text for clarity, tone, and impact                              |
+| `brief`           | Translate technical work into executive summaries                      |
+| `update-all`      | Staged package updates with dry-run preview                            |
+| `ai-digest-agent` | Weekly AI/automation digest curation                                   |
+| `3d-logo`         | Interactive 3D logos with Three.js                                     |
+
+Retired: `ai-platform-updates` — the same job (logging Claude/ChatGPT/Gemini releases into a spreadsheet) is better handled by a scheduled script than a model-invoked skill. Moved to a daily launchd job.
 
 ### 6 Loop Commands (`commands/`)
 
@@ -72,6 +79,21 @@ The setup gets smarter every week through three layers:
 1. **Real-time feedback** — When an agent gives stale advice, a `[BASE-UPDATE-NEEDED]` flag is logged to its expertise file
 2. **Weekly audit** (`/agent-improvement`) — Every Friday, scans all agents against actual project state, flags drift, auto-fixes minor issues
 3. **Monthly Codex cross-review** — First Friday of each month, dispatches an independent AI reviewer to rate all agents 1-10
+
+### Evaluation Harness (`scripts/eval/`, `eval-fixtures/`, `docs/eval-harness.md`)
+
+Most agent repos ship with zero evidence their agents actually work. This one ships with two eval instruments that measure both halves of the system:
+
+| Instrument                | Layer      | Question                                                        | Baseline                                                |
+| ------------------------- | ---------- | --------------------------------------------------------------- | ------------------------------------------------------- |
+| **Skill-dispatch eval**   | Routing    | Does Claude Code pick the right skill/agent for a prompt?       | ~87% strict accuracy on a 2-skill starter scenario set  |
+| **Agent catch-rate eval** | Capability | When the agent _does_ run, does it catch the bug it's meant to? | security-auditor 8/8 (100%) catch, 0% FP on 10 fixtures |
+
+The catch-rate harness — `scripts/eval/agent-eval.py` — invokes `claude -p --system-prompt <agent-body>` against YAML fixtures with planted bugs and clean controls, then grades responses against expected keywords. `--system-prompt` replaces the Claude Code default, so the measurement shape matches a real `Task` dispatch.
+
+**The interesting numbers are the divergences, not the headlines.** Strict (keyword-gated) vs manual review shows where the grader disagrees with a human reader — that's where you learn something. Full story, including honest limitations (small N, keyword vocabulary gap, LLM-as-judge v2 planned), in [`docs/eval-harness.md`](docs/eval-harness.md).
+
+Monthly cadence is wired into `commands/agent-improvement.md` (Phase 4.5) so catch rates trend over time — you find out _before_ the next production bug if an agent silently dropped in quality.
 
 ### Templates (`templates/`)
 
@@ -152,14 +174,14 @@ Use `templates/skill-template.md` as a starting point. Key rules:
 ```
 the-agentic-developer/
 ├── README.md
-├── agents/                              # 14 specialized agents
+├── agents/                              # 14 local + 2 plugin-inherited
 │   ├── ai-integration-specialist.md     # AI/LLM patterns, prompts, SDKs (opus)
 │   ├── api-architect.md                 # API design across frameworks (sonnet)
-│   ├── canva-specialist.md              # Canva MCP for branded PDFs (sonnet)
+│   ├── canva-specialist.md              # Canva MCP for branded PDFs (opus)
 │   ├── code-reviewer.md                 # Code quality + security review (opus)
 │   ├── database-architect.md            # Schema, queries, migrations (opus)
 │   ├── frontend-specialist.md           # React/Next.js/Vite frontend (sonnet)
-│   ├── performance-optimizer.md         # Bottleneck analysis (haiku)
+│   ├── performance-optimizer.md         # Bottleneck analysis (sonnet)
 │   ├── python-django-specialist.md      # Django/Flask backend (sonnet)
 │   ├── security-auditor.md              # OWASP review + incident history (opus)
 │   ├── sharepoint-graph-specialist.md   # MS Graph + SharePoint Drive/Lists/SPFx (opus)
@@ -167,17 +189,18 @@ the-agentic-developer/
 │   ├── systematic-debugger.md           # Root cause analysis (opus)
 │   ├── tdd-engineer.md                  # Test-driven development (sonnet)
 │   └── ui-ux-designer.md                # Design system + layout (opus)
+│   # Plugin-inherited (not in this repo):
+│   #   silent-failure-hunter, type-design-analyzer — from pr-review-toolkit
 │
-├── skills/                              # 15 custom skills
+├── skills/                              # 14 custom skills
 │   ├── 3d-logo/SKILL.md
 │   ├── ai-digest-agent/SKILL.md
-│   ├── ai-platform-updates/SKILL.md
 │   ├── brief/SKILL.md
 │   ├── copy/SKILL.md
 │   ├── decision-brief/SKILL.md
 │   ├── delegate/SKILL.md
 │   ├── file-emails/SKILL.md
-│   ├── grep-all/SKILL.md                # NEW — cross-project regex search
+│   ├── grep-all/SKILL.md                # cross-project regex search
 │   ├── inbox-summary/SKILL.md
 │   ├── qa-gate/SKILL.md
 │   ├── refactor-ui/SKILL.md
@@ -199,7 +222,15 @@ the-agentic-developer/
 │
 ├── scripts/                             # Helper scripts
 │   ├── grep-all.sh                      # Backs the /grep-all skill
-│   └── rebuild-projects-txt.sh          # Generates projects.txt (canonical inventory)
+│   ├── rebuild-projects-txt.sh          # Generates projects.txt (canonical inventory)
+│   └── eval/
+│       └── agent-eval.py                # Synthetic-bug catch-rate harness
+│
+├── eval-fixtures/                       # Sample YAML fixtures (adapt for your agents)
+│   ├── README.md
+│   └── security/
+│       ├── 001-sqli-fstring.yaml        # Planted: f-string SQL injection
+│       └── 004-clean-parameterized.yaml # Clean: parameterized query (FP test)
 │
 ├── templates/                           # Starter templates
 │   ├── CLAUDE.md                        # Personal instructions template
@@ -209,20 +240,22 @@ the-agentic-developer/
 └── docs/
     ├── design-philosophy.md             # Deep dive on design decisions
     ├── advisor-hook.md                  # UserPromptSubmit advisor reminder config
-    └── destructive-guard-fix.md         # Post-mortem on two latent hook bugs
+    ├── destructive-guard-fix.md         # Post-mortem on two latent hook bugs
+    └── eval-harness.md                  # Two-instrument eval system — architecture + baselines + limitations
 ```
 
 ## Stats
 
-| Metric                 | Value                                                            |
-| ---------------------- | ---------------------------------------------------------------- |
-| Agents                 | 14 (8 Opus, 5 Sonnet, 1 Haiku)                                   |
-| Skills                 | 15                                                               |
-| Commands               | 6                                                                |
-| Hooks                  | 3 (advisor reminder, destructive-guard, lesson-capture-detector) |
-| Avg agent size         | ~140 lines (pure signal, no filler)                              |
-| Description compliance | 100% under 250 chars                                             |
-| Self-improvement       | Weekly audit + monthly cross-review + auto-capture corrections   |
+| Metric                 | Value                                                                                 |
+| ---------------------- | ------------------------------------------------------------------------------------- |
+| Agents                 | 16 (9 Opus, 5 Sonnet, 2 Inherit)                                                      |
+| Skills                 | 14                                                                                    |
+| Commands               | 6                                                                                     |
+| Hooks                  | 3 (advisor reminder, destructive-guard, lesson-capture-detector)                      |
+| Evaluation             | 2 instruments (routing + catch-rate), monthly cadence, sample fixtures + harness ship |
+| Avg agent size         | ~140 lines (pure signal, no filler)                                                   |
+| Description compliance | 100% under 250 chars                                                                  |
+| Self-improvement       | Weekly audit + monthly cross-review + catch-rate trend + auto-capture corrections     |
 
 ## Contributing
 
