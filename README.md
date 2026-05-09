@@ -6,6 +6,8 @@ Built for shipping across Django, Flask, Next.js, React/Vite, Python utilities, 
 
 > **This isn't a collection of generic prompts.** Most Claude Code agent repos are 200 lines of "You are an expert React developer" that Claude already knows. This setup contains only what Claude would get wrong without it — project-specific patterns, real design tokens, actual incident history, and proven conventions.
 
+> **What's new in May 2026:** added `worktree.baseRef` pin, `autoMode.hard_deny` classifier rules layered on top of the bash-hook guards, `$CLAUDE_EFFORT`-aware hooks and statusline, an MCP server health-check that surfaces failures in the statusline, a 90-day Codex telemetry rollup that flags zero-dispatch agents, and a weekly TTS cache cleanup. See [What's New](#whats-new-may-2026) below for the patterns and the why.
+
 ## What's Inside
 
 ### 16 Specialized Agents (`agents/`)
@@ -79,6 +81,104 @@ The setup gets smarter every week through three layers:
 1. **Real-time feedback** — When an agent gives stale advice, a `[BASE-UPDATE-NEEDED]` flag is logged to its expertise file
 2. **Weekly audit** (`/agent-improvement`) — Every Friday, scans all agents against actual project state, flags drift, auto-fixes minor issues
 3. **Monthly Codex cross-review** — First Friday of each month, dispatches an independent AI reviewer to rate all agents 1-10
+
+## What's New (May 2026)
+
+Recent Claude Code releases shipped a few features that compose into a meaningfully better defense-in-depth posture and a self-instrumenting setup. The pattern matters more than the specific values — copy the shape, set your own thresholds.
+
+### 1. `worktree.baseRef` pin (Claude Code 2.1.133)
+
+Claude Code 2.1.128 silently flipped the default base for new worktrees from `origin/<default>` to local `HEAD`. 2.1.133 added a setting to pin the choice. **Pin it explicitly** — even if you agree with the current default, future flips can silently change behavior. If you share a filesystem with another agent (e.g. a Codex CLI session), branching from local `HEAD` can inherit that agent's WIP into a "fresh" worktree.
+
+```jsonc
+// ~/.claude/settings.json
+{
+  "worktree": { "baseRef": "fresh" }, // or "head" if you want unpushed commits to follow
+}
+```
+
+### 2. `autoMode.hard_deny` classifier rules (2.1.136)
+
+`hard_deny` rules block at the classifier layer, _before_ bash hooks run. Unlike `soft_deny`, they cannot be overridden by `allow` exceptions or in-the-moment user intent — so they're the right home for rules you never want to weaken under pressure.
+
+The pattern: encode your most load-bearing CLAUDE.md prose rules as `hard_deny` strings. Don't replace your bash hooks — layer on top of them. Three layers (classifier → bash hook → CLAUDE.md prose) means each catches what the others miss.
+
+```jsonc
+// ~/.claude/settings.json
+{
+  "autoMode": {
+    "hard_deny": [
+      "Force-pushing to main, master, or any default branch — including --force, -f, and --force-with-lease",
+      "Skipping git or husky hooks via --no-verify, --no-gpg-sign, or commit.gpgsign=false flags",
+      // ...add your own rules that should never weaken
+    ],
+  },
+}
+```
+
+### 3. `$CLAUDE_EFFORT`-aware hooks and statusline (2.1.133)
+
+Hooks now receive the active effort level via the `$CLAUDE_EFFORT` env var. This unlocks two patterns:
+
+**Effort-aware hooks** — Style-enforcement hooks (formatting hooks, project-convention guards, etc.) can early-exit on `fast` effort so quick edits aren't blocked. Security and destructive guards stay on at all effort levels — never weaken those.
+
+```bash
+# At the top of any "soft" PreToolUse hook:
+if [[ "${CLAUDE_EFFORT:-}" == "fast" ]]; then
+    exit 0  # Skip enforcement on fast effort
+fi
+```
+
+**Statusline indicator** — Surface the active effort level so you always know which mode you're in. The `/effort` cross-session bleed bug fixed in 2.1.133 is exactly the kind of thing that's invisible without this.
+
+```bash
+# In your statusline script, append to the model name:
+if [ -n "$CLAUDE_EFFORT" ]; then
+    short_model="${short_model}·${CLAUDE_EFFORT}"  # Opus·fast / Opus·xhigh
+fi
+```
+
+### 4. MCP server health-check with statusline integration
+
+Daily lightweight connectivity check across all configured MCP servers. URL servers get `curl -fsS -m 5`; process servers get `--help` / `--version` / binary-exists check. Writes a state JSON; the statusline reads it and shows a red `⚠ MCP×N` badge when any server is down.
+
+```bash
+# Sketch — read both ~/.claude.json and ~/.claude/mcp.json for inventory
+for name in $servers; do
+    if [[ -n "$url" ]]; then
+        curl -fsS -m 5 -o /dev/null "$url" && status=up || status=down
+    else
+        timeout 10 "$cmd" --help &>/dev/null && status=up || status=down
+    fi
+done
+# Write {checked_at, all_healthy, total, down_count, down[], healthy[]} to state file
+```
+
+In the statusline, render the badge only when state is fresh (e.g. <36h old) — better silent than wrong.
+
+> ⚠️ **jq gotcha:** `jq -r '.all_healthy // true'` returns `"true"` when the field exists and is `false`, because jq's `//` operator treats `false` (not just `null`) as a fallback trigger. Use raw `.all_healthy` and check `[ "$x" = "false" ]` instead.
+
+### 5. Telemetry-driven quarterly summary
+
+If you log every subagent dispatch (a `SubagentStop` hook writing a JSONL row per call) and every code-review triage decision, you have a measurable basis for trimming bloat. A 90-day rollup answers: which specialists actually got dispatched? Which never did? Which reviewer's findings have the highest real-rate?
+
+A useful summary structure:
+
+1. **Volume** — N dispatches, N triages, date range, avg dispatches/day
+2. **Agent dispatch heatmap** — Counts and avg duration per agent type
+3. **Review pipeline ROI** — `findings_real / findings_total` by reviewer; QA gate verdict distribution; fix-loop iteration cost
+4. **Drift flags** — Declared agents that had **zero dispatches** in the window; low-volume agents (<3 in 90 days)
+5. **Project activity** — Top working directories where agent time gets spent
+
+The drift flag is the most valuable signal. A specialist that hasn't been dispatched in 90 days is either misnamed (Claude can't find it from the description), redundant with another specialist, or unnecessary. Multiple quarters of zero dispatches → retire it.
+
+### 6. Cache hygiene as background routine
+
+Claude Code's voice TTS cache (and similar transient caches) accrues unboundedly. Wire a weekly `find -mtime +7 -delete` cleanup with a lockfile and a one-line log per run. Silent by design — no notification fatigue. Caches regenerate on demand.
+
+### Why these compose
+
+Each item is small. Together they shift the setup from _use_ to _instrument_: classifier rules block what bash hooks miss, hooks block what classifier rules miss, telemetry catches drift the audits miss, and the statusline surfaces what the file system hides. Defense in depth at every layer.
 
 ### Evaluation Harness (`scripts/eval/`, `eval-fixtures/`, `docs/eval-harness.md`)
 
